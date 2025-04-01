@@ -1,20 +1,16 @@
 #include <iostream>
-#include <string>
+#include <cstring>
 #include "store.hpp"
+#include "server.hpp"
 #include "parser.hpp"
 
-// ANSI color codes
 #define RED     "\033[1;31m"
 #define GREEN   "\033[1;32m"
 #define YELLOW  "\033[1;33m"
 #define CYAN    "\033[1;36m"
 #define RESET   "\033[0m"
 
-int main() {
-    Store store;
-
-    store.loadFromFile("dump.rdb");
-
+void runClient(Store& store) {
     std::cout << CYAN;
     std::cout << R"(
 
@@ -24,7 +20,7 @@ int main() {
 ██╔══██║██║██╔══██╗██╔══╝      ██║╚██╔╝██║██╔══╝  
 ██║  ██║██║██║  ██║███████╗    ██║ ╚═╝ ██║███████╗
 ╚═╝  ╚═╝╚═╝╚═╝  ╚═╝╚══════╝    ╚═╝     ╚═╝╚══════╝
-                                                  
+
 Redis Clone by Yahya 🧠 - Type HELP for commands
 
 )" << RESET;
@@ -39,9 +35,7 @@ Redis Clone by Yahya 🧠 - Type HELP for commands
 
         std::string command = tokens[0];
 
-        if (command == "EXIT" || command == "QUIT") {
-            break;
-        }
+        if (command == "EXIT" || command == "QUIT") break;
 
         else if (command == "SET" && tokens.size() >= 3) {
             std::string key = tokens[1];
@@ -56,11 +50,7 @@ Redis Clone by Yahya 🧠 - Type HELP for commands
 
         else if (command == "GET" && tokens.size() == 2) {
             auto result = store.get(tokens[1]);
-            if (result) {
-                std::cout << *result << "\n";
-            } else {
-                std::cout << "(nil)\n";
-            }
+            std::cout << (result ? *result : "(nil)") << "\n";
         }
 
         else if (command == "DEL" && tokens.size() == 2) {
@@ -73,14 +63,9 @@ Redis Clone by Yahya 🧠 - Type HELP for commands
         }
 
         else if (command == "KEYS") {
-            auto all = store.keys();
-            if (all.empty()) {
-                std::cout << "(empty)\n";
-            } else {
-                for (const auto& k : all) {
-                    std::cout << k << "\n";
-                }
-            }
+            auto keys = store.keys();
+            if (keys.empty()) std::cout << "(empty)\n";
+            else for (const auto& key : keys) std::cout << key << "\n";
         }
 
         else if (command == "FLUSHALL") {
@@ -94,33 +79,15 @@ Redis Clone by Yahya 🧠 - Type HELP for commands
                 bool ok = store.expire(tokens[1], seconds);
                 std::cout << (ok ? "(1)\n" : "(0)\n");
             } catch (...) {
-                std::cout << RED << "❌ Invalid number of seconds.\n" << RESET;
+                std::cout << RED << "❌ Invalid seconds\n" << RESET;
             }
         }
 
         else if (command == "TTL" && tokens.size() == 2) {
-            int result = store.ttl(tokens[1]);
-            if (result == -2) {
-                std::cout << "(key not found or expired)\n";
-            } else if (result == -1) {
-                std::cout << "(no expiration)\n";
-            } else {
-                std::cout << result << " seconds\n";
-            }
-        }
-
-        else if (command == "SAVE") {
-            bool ok = store.saveToFile("dump.rdb");
-            std::cout << (ok ? GREEN "✅ Saved to dump.rdb\n" RESET : RED "❌ Save failed\n" RESET);
-        }
-
-        else if (command == "LOAD") {
-            bool ok = store.loadFromFile("dump.rdb");
-            std::cout << (ok ? GREEN "✅ Loaded from dump.rdb\n" RESET : RED "❌ Load failed\n" RESET);
-        }
-
-        else if (command == "CLEAR") {
-            std::cout << "\033[2J\033[1;1H"; // Clear screen
+            int ttl = store.ttl(tokens[1]);
+            if (ttl == -2) std::cout << "(key not found or expired)\n";
+            else if (ttl == -1) std::cout << "(no expiration)\n";
+            else std::cout << ttl << " seconds\n";
         }
 
         else if (command == "HELP") {
@@ -134,19 +101,28 @@ Redis Clone by Yahya 🧠 - Type HELP for commands
                       << "  FLUSHALL            - Clear all data\n"
                       << "  EXPIRE key seconds  - Set a TTL for a key\n"
                       << "  TTL key             - Show time until expiration\n"
-                      << "  SAVE                - Save to disk\n"
-                      << "  LOAD                - Load from disk\n"
-                      << "  CLEAR               - Clear the screen\n"
                       << "  EXIT or QUIT        - Exit the program\n"
                       << RESET;
         }
 
         else {
-            std::cout << RED << "❌ Unknown or invalid command. Type HELP for options.\n" << RESET;
+            std::cout << YELLOW << "(unknown or unsupported command)\n" << RESET;
         }
     }
 
     store.saveToFile("dump.rdb");
+}
+
+int main(int argc, char* argv[]) {
+    Store store;
+    store.loadFromFile("dump.rdb");
+
+    if (argc > 1 && strcmp(argv[1], "client") == 0) {
+        runClient(store);
+    } else {
+        std::cout << "Running in server mode...\n";
+        runServer(store);
+    }
 
     return 0;
 }

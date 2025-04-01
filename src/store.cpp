@@ -1,135 +1,28 @@
 #include "store.hpp"
-#include "json/json.hpp"
 #include <iostream>
+#include <chrono>
 #include <fstream>
+#include <json/json.hpp>
+
 using json = nlohmann::json;
-
-
-Store::Store() {
-    startCleanupThread();
-}
-
-Store::~Store() {
-    running = false;
-    if (cleanup_thread.joinable()) {
-        cleanup_thread.join();
-    }
-}
 
 void Store::set(const std::string& key, const std::string& value) {
     std::lock_guard<std::mutex> lock(mtx);
     data[key] = value;
-    expiry.erase(key); // Remove TTL if it existed
 }
 
-std::optional<std::string> Store::get(const std::string& key) {
+std::string* Store::get(const std::string& key) {
     std::lock_guard<std::mutex> lock(mtx);
-
-    auto it = expiry.find(key);
-    if (it != expiry.end() && std::chrono::steady_clock::now() >= it->second) {
-        data.erase(key);
-        expiry.erase(key);
-        return std::nullopt;
+    auto it = data.find(key);
+    if (it != data.end()) {
+        return &it->second;
     }
-
-    if (data.find(key) != data.end()) {
-        return data[key];
-    }
-    return std::nullopt;
-}
-
-bool Store::del(const std::string& key) {
-    std::lock_guard<std::mutex> lock(mtx);
-    expiry.erase(key);
-    return data.erase(key) > 0;
-}
-
-bool Store::exists(const std::string& key) {
-    std::lock_guard<std::mutex> lock(mtx);
-
-    auto it = expiry.find(key);
-    if (it != expiry.end() && std::chrono::steady_clock::now() >= it->second) {
-        data.erase(key);
-        expiry.erase(key);
-        return false;
-    }
-
-    return data.find(key) != data.end();
-}
-
-std::vector<std::string> Store::keys() {
-    std::lock_guard<std::mutex> lock(mtx);
-    std::vector<std::string> all_keys;
-
-    for (const auto& pair : data) {
-        all_keys.push_back(pair.first);
-    }
-
-    return all_keys;
-}
-
-void Store::flush() {
-    std::lock_guard<std::mutex> lock(mtx);
-    data.clear();
-    expiry.clear();
-}
-
-bool Store::expire(const std::string& key, int seconds) {
-    std::lock_guard<std::mutex> lock(mtx);
-    if (data.find(key) == data.end()) return false;
-    expiry[key] = std::chrono::steady_clock::now() + std::chrono::seconds(seconds);
-    return true;
-}
-
-int Store::ttl(const std::string& key) {
-    std::lock_guard<std::mutex> lock(mtx);
-
-    if (data.find(key) == data.end()) return -2;
-
-    auto it = expiry.find(key);
-    if (it == expiry.end()) return -1;
-
-    auto now = std::chrono::steady_clock::now();
-    auto expires_at = it->second;
-
-    if (now >= expires_at) {
-        data.erase(key);
-        expiry.erase(key);
-        return -2;
-    }
-
-    auto remaining = std::chrono::duration_cast<std::chrono::seconds>(expires_at - now).count();
-    return static_cast<int>(remaining);
-}
-
-
-void Store::startCleanupThread() {
-    cleanup_thread = std::thread([this]() {
-        while (running) {
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-            cleanupExpiredKeys();
-        }
-    });
-}
-
-void Store::cleanupExpiredKeys() {
-    std::lock_guard<std::mutex> lock(mtx);
-    auto now = std::chrono::steady_clock::now();
-
-    for (auto it = expiry.begin(); it != expiry.end(); ) {
-        if (now >= it->second) {
-            data.erase(it->first);
-            it = expiry.erase(it);
-        } else {
-            ++it;
-        }
-    }
+    return nullptr;
 }
 
 
 bool Store::saveToFile(const std::string& filename) {
     std::lock_guard<std::mutex> lock(mtx);
-
     json j;
     for (const auto& pair : data) {
         j[pair.first] = pair.second;
@@ -137,14 +30,12 @@ bool Store::saveToFile(const std::string& filename) {
 
     std::ofstream out(filename);
     if (!out) return false;
-
-    out << j.dump(4); // Pretty-print
+    out << j.dump(4);
     return true;
 }
 
 bool Store::loadFromFile(const std::string& filename) {
     std::lock_guard<std::mutex> lock(mtx);
-
     std::ifstream in(filename);
     if (!in) return false;
 
@@ -156,4 +47,64 @@ bool Store::loadFromFile(const std::string& filename) {
     }
 
     return true;
+}
+
+bool Store::expire(const std::string& key, int seconds) {
+    std::lock_guard<std::mutex> lock(mtx);
+    auto it = data.find(key);
+    if (it != data.end()) {
+        expiry[key] = std::chrono::steady_clock::now() + std::chrono::seconds(seconds);
+        return true;
+    }
+    return false;
+}
+
+int Store::ttl(const std::string& key) {
+    std::lock_guard<std::mutex> lock(mtx);
+    auto it = expiry.find(key);
+    if (it != expiry.end()) {
+        auto now = std::chrono::steady_clock::now();
+        auto expiration_time = it->second;
+
+        if (now >= expiration_time) {
+            data.erase(key);
+            expiry.erase(it);
+            return -2; // Key expired
+        }
+
+        auto ttl = std::chrono::duration_cast<std::chrono::seconds>(expiration_time - now).count();
+        return static_cast<int>(ttl); // Time remaining
+    }
+    return -1; // No expiration
+}
+
+bool Store::del(const std::string& key) {
+    std::lock_guard<std::mutex> lock(mtx);
+    auto it = data.find(key);
+    if (it != data.end()) {
+        data.erase(it);
+        expiry.erase(key);  // Remove expiration as well
+        return true;
+    }
+    return false;
+}
+
+bool Store::exists(const std::string& key) {
+    std::lock_guard<std::mutex> lock(mtx);
+    return data.find(key) != data.end();
+}
+
+std::vector<std::string> Store::keys() {
+    std::lock_guard<std::mutex> lock(mtx);
+    std::vector<std::string> keys_list;
+    for (const auto& pair : data) {
+        keys_list.push_back(pair.first);
+    }
+    return keys_list;
+}
+
+void Store::flush() {
+    std::lock_guard<std::mutex> lock(mtx);
+    data.clear();
+    expiry.clear();
 }
