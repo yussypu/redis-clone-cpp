@@ -67,6 +67,27 @@ int main() {
             std::cout << "OK\n";
         }
 
+        else if (command == "EXPIRE" && tokens.size() == 3) {
+            try {
+                int seconds = std::stoi(tokens[2]);
+                bool ok = store.expire(tokens[1], seconds);
+                std::cout << (ok ? "(1)\n" : "(0)\n");
+            } catch (...) {
+                std::cout << "Invalid number of seconds.\n";
+            }
+        }
+
+        else if (command == "TTL" && tokens.size() == 2) {
+            int result = store.ttl(tokens[1]);
+                if (result == -2) {
+                    std::cout << "(key not found or expired)\n";
+                } else if (result == -1) {
+                    std::cout << "(no expiration)\n";
+                } else {
+                    std::cout << result << " seconds\n";
+                }
+        }
+
         else if (command == "HELP") {
             std::cout << "Supported commands:\n"
                       << "  SET key value       - Store a value\n"
@@ -75,6 +96,8 @@ int main() {
                       << "  EXISTS key          - Check if key exists\n"
                       << "  KEYS                - List all keys\n"
                       << "  FLUSHALL            - Clear all data\n"
+                      << "  EXPIRE key seconds  - Set a TTL for a key\n"
+                      << "  TTL key             - Time (in seconds)\n"
                       << "  EXIT or QUIT        - Exit the program\n";
         }
 
