@@ -120,11 +120,6 @@ LOAD
 
 ---
 
-## Demo
-
-TO DO
----
-
 ## Why?
 
 This was built to:
