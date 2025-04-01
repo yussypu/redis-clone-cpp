@@ -1,4 +1,4 @@
-Redis Clone in C++  
+# Redis Clone in C++  
 Built from scratch by [@yussypu](https://github.com/yussypu)
 
 A lightweight, educational clone of Redis — implemented in modern C++ with support for in-memory storage, TTL, persistence, and a REPL interface.
