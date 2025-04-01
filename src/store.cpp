@@ -4,6 +4,7 @@
 #include <fstream>
 using json = nlohmann::json;
 
+
 Store::Store() {
     startCleanupThread();
 }

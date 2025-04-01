@@ -3,17 +3,35 @@
 #include "store.hpp"
 #include "parser.hpp"
 
+// ANSI color codes
+#define RED     "\033[1;31m"
+#define GREEN   "\033[1;32m"
+#define YELLOW  "\033[1;33m"
+#define CYAN    "\033[1;36m"
+#define RESET   "\033[0m"
+
 int main() {
     Store store;
 
     store.loadFromFile("dump.rdb");
 
+    std::cout << CYAN;
+    std::cout << R"(
 
-    std::cout << "Welcome to Yahya's Redis Clone\n";
+██╗  ██╗██╗██████╗ ███████╗    ███╗   ███╗███████╗
+██║  ██║██║██╔══██╗██╔════╝    ████╗ ████║██╔════╝
+███████║██║██████╔╝█████╗      ██╔████╔██║█████╗  
+██╔══██║██║██╔══██╗██╔══╝      ██║╚██╔╝██║██╔══╝  
+██║  ██║██║██║  ██║███████╗    ██║ ╚═╝ ██║███████╗
+╚═╝  ╚═╝╚═╝╚═╝  ╚═╝╚══════╝    ╚═╝     ╚═╝╚══════╝
+                                                  
+Redis Clone by Yahya 🧠 - Type HELP for commands
+
+)" << RESET;
 
     std::string line;
     while (true) {
-        std::cout << "> ";
+        std::cout << RED << "redis-clone> " << RESET;
         std::getline(std::cin, line);
 
         auto tokens = tokenize(line);
@@ -33,7 +51,7 @@ int main() {
                 if (i != tokens.size() - 1) value += " ";
             }
             store.set(key, value);
-            std::cout << "OK\n";
+            std::cout << GREEN << "✅ OK\n" << RESET;
         }
 
         else if (command == "GET" && tokens.size() == 2) {
@@ -67,7 +85,7 @@ int main() {
 
         else if (command == "FLUSHALL") {
             store.flush();
-            std::cout << "OK\n";
+            std::cout << GREEN << "✅ OK\n" << RESET;
         }
 
         else if (command == "EXPIRE" && tokens.size() == 3) {
@@ -76,33 +94,38 @@ int main() {
                 bool ok = store.expire(tokens[1], seconds);
                 std::cout << (ok ? "(1)\n" : "(0)\n");
             } catch (...) {
-                std::cout << "Invalid number of seconds.\n";
+                std::cout << RED << "❌ Invalid number of seconds.\n" << RESET;
             }
         }
 
         else if (command == "TTL" && tokens.size() == 2) {
             int result = store.ttl(tokens[1]);
-                if (result == -2) {
-                    std::cout << "(key not found or expired)\n";
-                } else if (result == -1) {
-                    std::cout << "(no expiration)\n";
-                } else {
-                    std::cout << result << " seconds\n";
-                }
+            if (result == -2) {
+                std::cout << "(key not found or expired)\n";
+            } else if (result == -1) {
+                std::cout << "(no expiration)\n";
+            } else {
+                std::cout << result << " seconds\n";
+            }
         }
 
         else if (command == "SAVE") {
             bool ok = store.saveToFile("dump.rdb");
-            std::cout << (ok ? "Saved to dump.rdb\n" : "Save failed\n");
+            std::cout << (ok ? GREEN "✅ Saved to dump.rdb\n" RESET : RED "❌ Save failed\n" RESET);
         }
 
         else if (command == "LOAD") {
             bool ok = store.loadFromFile("dump.rdb");
-            std::cout << (ok ? "Loaded from dump.rdb\n" : "Load failed\n");
+            std::cout << (ok ? GREEN "✅ Loaded from dump.rdb\n" RESET : RED "❌ Load failed\n" RESET);
+        }
+
+        else if (command == "CLEAR") {
+            std::cout << "\033[2J\033[1;1H"; // Clear screen
         }
 
         else if (command == "HELP") {
-            std::cout << "Supported commands:\n"
+            std::cout << YELLOW
+                      << "Supported commands:\n"
                       << "  SET key value       - Store a value\n"
                       << "  GET key             - Retrieve a value\n"
                       << "  DEL key             - Delete a key\n"
@@ -110,12 +133,16 @@ int main() {
                       << "  KEYS                - List all keys\n"
                       << "  FLUSHALL            - Clear all data\n"
                       << "  EXPIRE key seconds  - Set a TTL for a key\n"
-                      << "  TTL key             - Time (in seconds)\n"
-                      << "  EXIT or QUIT        - Exit the program\n";
+                      << "  TTL key             - Show time until expiration\n"
+                      << "  SAVE                - Save to disk\n"
+                      << "  LOAD                - Load from disk\n"
+                      << "  CLEAR               - Clear the screen\n"
+                      << "  EXIT or QUIT        - Exit the program\n"
+                      << RESET;
         }
 
         else {
-            std::cout << "Unknown or invalid command.\n";
+            std::cout << RED << "❌ Unknown or invalid command. Type HELP for options.\n" << RESET;
         }
     }
 
