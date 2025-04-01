@@ -21,6 +21,8 @@ public:
     void flush();
     bool expire(const std::string& key, int seconds); 
     int ttl(const std::string& key); 
+    bool saveToFile(const std::string& filename);
+    bool loadFromFile(const std::string& filename);
 
 
 private:

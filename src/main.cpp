@@ -6,6 +6,9 @@
 int main() {
     Store store;
 
+    store.loadFromFile("dump.rdb");
+
+
     std::cout << "Welcome to Yahya's Redis Clone\n";
 
     std::string line;
@@ -88,6 +91,16 @@ int main() {
                 }
         }
 
+        else if (command == "SAVE") {
+            bool ok = store.saveToFile("dump.rdb");
+            std::cout << (ok ? "Saved to dump.rdb\n" : "Save failed\n");
+        }
+
+        else if (command == "LOAD") {
+            bool ok = store.loadFromFile("dump.rdb");
+            std::cout << (ok ? "Loaded from dump.rdb\n" : "Load failed\n");
+        }
+
         else if (command == "HELP") {
             std::cout << "Supported commands:\n"
                       << "  SET key value       - Store a value\n"
@@ -105,6 +118,8 @@ int main() {
             std::cout << "Unknown or invalid command.\n";
         }
     }
+
+    store.saveToFile("dump.rdb");
 
     return 0;
 }

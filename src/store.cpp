@@ -1,5 +1,8 @@
 #include "store.hpp"
+#include "json/json.hpp"
 #include <iostream>
+#include <fstream>
+using json = nlohmann::json;
 
 Store::Store() {
     startCleanupThread();
@@ -120,4 +123,36 @@ void Store::cleanupExpiredKeys() {
             ++it;
         }
     }
+}
+
+
+bool Store::saveToFile(const std::string& filename) {
+    std::lock_guard<std::mutex> lock(mtx);
+
+    json j;
+    for (const auto& pair : data) {
+        j[pair.first] = pair.second;
+    }
+
+    std::ofstream out(filename);
+    if (!out) return false;
+
+    out << j.dump(4); // Pretty-print
+    return true;
+}
+
+bool Store::loadFromFile(const std::string& filename) {
+    std::lock_guard<std::mutex> lock(mtx);
+
+    std::ifstream in(filename);
+    if (!in) return false;
+
+    json j;
+    in >> j;
+
+    for (auto& [key, value] : j.items()) {
+        data[key] = value;
+    }
+
+    return true;
 }
