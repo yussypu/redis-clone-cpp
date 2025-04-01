@@ -1,11 +1,11 @@
-# 🔥 Redis Clone in C++  
+Redis Clone in C++  
 Built from scratch by [@yussypu](https://github.com/yussypu)
 
 A lightweight, educational clone of Redis — implemented in modern C++ with support for in-memory storage, TTL, persistence, and a REPL interface.
 
 ---
 
-## 🚀 Features
+## Features
 
 - ✅ `SET` / `GET` key-value store
 - ✅ `DEL`, `EXISTS`, `KEYS`, `FLUSHALL`
@@ -19,15 +19,15 @@ A lightweight, educational clone of Redis — implemented in modern C++ with sup
 
 ---
 
-## 💠 Build Instructions
+## Build Instructions
 
-### 🔧 Prerequisites
+### Prerequisites
 
 - C++17 or later
 - Make
 - Netcat (`nc`) for testing TCP server
 
-### ⚙️ Build & Run
+### Build & Run
 
 ```bash
 # Clone the repo
@@ -46,7 +46,7 @@ make client
 
 ---
 
-## 📡 Server Mode (TCP)
+## Server Mode (TCP)
 
 In one terminal:
 
@@ -71,7 +71,7 @@ TTL name
 
 ---
 
-## 💻 CLI Mode
+## CLI Mode
 
 ```bash
 make client
@@ -81,7 +81,7 @@ Enjoy a colorful REPL with full command support.
 
 ---
 
-## 📂 Persistence
+## Persistence
 
 - Keys are saved to `dump.rdb` on exit
 - Loaded automatically on startup
@@ -89,7 +89,7 @@ Enjoy a colorful REPL with full command support.
 
 ---
 
-## 📦 Project Structure
+## Project Structure
 
 ```
 redis-clone-cpp/
@@ -103,7 +103,7 @@ redis-clone-cpp/
 
 ---
 
-## 📚 Example Commands
+## Example Commands
 
 ```
 SET user yahya
@@ -120,13 +120,12 @@ LOAD
 
 ---
 
-## ✨ Demo
+## Demo
 
-> You can add a terminal GIF with [asciinema](https://asciinema.org/) or upload a `.gif` here!
-
+TO DO
 ---
 
-## 🧠 Why?
+## Why?
 
 This was built to:
 
@@ -137,7 +136,7 @@ This was built to:
 
 ---
 
-## 🧩 TODO / Ideas
+## TODO / Ideas
 
 - [ ] RESP protocol support
 - [ ] Authentication
@@ -146,12 +145,12 @@ This was built to:
 
 ---
 
-## 👨‍💻 Author
+## Author
 
 Made with ❤️ by [@yussypu](https://github.com/yussypu)
 
 ---
 
-## 📜 License
+## License
 
 MIT — free to use, learn from, and remix!
