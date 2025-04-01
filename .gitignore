@@ -1,0 +1,4 @@
+# Ignore compiled binary
+redis-clone
+
+.DS_Store
